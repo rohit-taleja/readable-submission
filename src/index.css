@@ -3,14 +3,17 @@ body {
   padding: 0;
   font-family: sans-serif;
 }
-#comment-textarea{
+#comment-textarea {
   width: 300px;
   position: relative;
-  top:10px;
+  top: 10px;
 }
-#addpost-title,#addpost-body,#editpost-title,#editpost-body{
+#addpost-title,
+#addpost-body,
+#editpost-title,
+#editpost-body {
   width: 100%;
 }
-.inputsize{
-  width: 80%
+.inputsize {
+  width: 80%;
 }

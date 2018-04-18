@@ -8,11 +8,12 @@ import * as APIS from "./commonapis";
 import serializeForm from "form-serialize";
 import uuid from "node-uuid";
 import Moment from "react-moment";
-
+import PageNotFound from "./pagenotfound";
 class Category extends Component {
   state = {
     cat: [],
-    posts: []
+    posts: [],
+    isCategoryAvailable: false
   };
 
   componentDidMount() {
@@ -20,9 +21,31 @@ class Category extends Component {
       this.setState({ cat: data.categories });
     });
     APIS.getPostsbyCategory(this.props.category).then(data => {
+      if (Object.keys(data).length == 0) {
+        this.setState({ isCategoryAvailable: true });
+        return;
+      }
       this.setState({ posts: data });
     });
+    let postsCount = 0;
+    this.state.posts.map((post, index) => {
+      APIS.getComments(post.id).then(data => {
+        postsCount++;
+        post["commentCount"] = data.length;
+        if (postsCount == this.state.posts.length) {
+          this.setState({ posts: this.state.posts });
+        }
+      });
+    });
   }
+  deletePost = (e, currPost) => {
+    e.preventDefault();
+    APIS.deletePost(currPost.id).then(res => {
+      this.setState({
+        posts: this.state.posts.filter(ele => ele.id != currPost.id)
+      });
+    });
+  };
 
   //addpost
 
@@ -52,6 +75,15 @@ class Category extends Component {
       });
     });
   }
+  getPostsByCategory = (e, categoryName) => {
+    e.preventDefault();
+    APIS.getPostsbyCategory(categoryName).then(data => {
+      this.setState({ posts: data });
+    });
+    // this.context.history.push(`/${categoryName}`)
+    this.props.history.push(`/${categoryName}`);
+  };
+
   sortByVote = e => {
     e.preventDefault();
     this.state.posts.sort((a, b) => {
@@ -70,17 +102,27 @@ class Category extends Component {
   render() {
     return (
       <div className="App">
-        <Route
-          
-          path="/category/:category"
-          render={() => (
+        {this.state.isCategoryAvailable ? (
+          <div>
+            <PageNotFound />
+          </div>
+        ) : (
+          <div>
             <div>
+              <div>
+                <Link to="/">back </Link>
+              </div>
               <h1> All categories</h1>
               <ol>
                 {this.state.cat.map((category, index) => (
                   <li key={index}>
                     Click to see
-                    <Link to={`/category/${category.name}`}>
+                    <Link
+                      to={`/${category.name}`}
+                      onClick={event =>
+                        this.getPostsByCategory(event, category.name)
+                      }
+                    >
                       {" "}
                       {category.name}{" "}
                     </Link>{" "}
@@ -108,7 +150,10 @@ class Category extends Component {
                     </div>
                     <div>
                       <b>title : </b>
-                      <Link to={`/post/${post.id}`}> {post.title}</Link>
+                      <Link to={`/${post.category}/${post.id}`}>
+                        {" "}
+                        {post.title}
+                      </Link>
                     </div>
                     <div>
                       <b>Date and Time : </b>
@@ -119,7 +164,18 @@ class Category extends Component {
                       <b>Body : </b>
                       {post.body}
                     </div>
-
+                    <div>
+                      <b>Comment count : </b>
+                      {post.commentCount}
+                    </div>
+                    <div>
+                      <Link to={`/editpost/${post.id}`}>Edit Post</Link>
+                    </div>
+                    <div>
+                      <button onClick={event => this.deletePost(event, post)}>
+                        Delete Post
+                      </button>
+                    </div>
                     <div>
                       <button onClick={event => this.upvote(event, post)}>
                         upvote
@@ -139,11 +195,10 @@ class Category extends Component {
                 <Link to="/addpost">Add a post</Link>{" "}
               </div>
             </div>
-          )}
-        />
-        {/* Addpost page */}
 
-        {/* <Route
+            {/* Addpost page */}
+
+            {/* <Route
           path="/addpost"
           render={({ history }) => (
             <div>
@@ -153,16 +208,19 @@ class Category extends Component {
           )}
         /> */}
 
-        {/* see post details */}
-        <Route
-          path="/post/:postid"
+            {/* see post details */}
+
+            {/* <Route
+          path="/:category/:postid"
           Component={ViewPost}
           render={({ history }) => (
             <div>
               <ViewPost />
             </div>
           )}
-        />
+        /> */}
+          </div>
+        )}
       </div>
     );
   }

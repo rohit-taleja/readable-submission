@@ -7,6 +7,7 @@ import { Route, withRouter } from "react-router-dom";
 import * as APIS from "./commonapis";
 import Moment from "react-moment";
 import "./App.css";
+import PageNotFound from "./pagenotfound";
 
 class ViewPost extends Component {
   state = {
@@ -14,14 +15,19 @@ class ViewPost extends Component {
     comments: [],
     edit: false,
     addComment: false,
-    body: ""
+    body: "",
+    isPostDeleted: false
   };
 
   componentDidMount() {
     APIS.getPostbyId(this.props.id).then(data => {
-      if (Object.keys(data).length == 0) return;
+      if (Object.keys(data).length == 0) {
+        this.setState({ isPostDeleted: true });
+        return;
+      }
       this.setState({ post: data });
     });
+
     APIS.getComments(this.props.id).then(data => {
       if (data.length && data[0].parentDeleted == true) {
         return;
@@ -159,131 +165,149 @@ class ViewPost extends Component {
   render() {
     return (
       <div>
-        <div>
-          <Link to="/">back </Link>
-        </div>
-        {this.state.post == undefined ? (
-          <div>go to back page</div>
+        {this.state.isPostDeleted ? (
+          <div>
+            <PageNotFound />
+          </div>
         ) : (
           <div>
-            <h4>Category: {this.state.post.category}</h4>
-            <h4>Author:{this.state.post.author}</h4>
-            <h4>Title: {this.state.post.title}</h4>
-            <h4>
-              Time: <Moment date={this.state.post.timestamp} />
-            </h4>
-            <h4>Body:{this.state.post.body}</h4>
             <div>
-              <Link to={`/editpost/${this.state.post.id}`}>Edit Post</Link>
+              <Link to="/">back </Link>
             </div>
-            <div>
-              <button
-                onClick={event => this.deletePost(event, this.state.post)}
-              >
-                Delete Post
-              </button>
-            </div>
-            <div>
-              <button
-                onClick={event => this.postsupvote(event, this.state.post)}
-              >
-                Upvote
-              </button>{" "}
-              {this.state.post.voteScore}{" "}
-              <button
-                onClick={event => this.postsdownvote(event, this.state.post)}
-              >
-                Downvote
-              </button>
-            </div>
-            <h4>Comments are :</h4>
-            <ol>
-              {this.state.comments.map((comment, index) => (
-                <li key={index}>
-                  {comment.is_editing ? (
-                    <h5>
-                      Body :
-                      <textarea
-                        id="comment-textarea"
-                        defaultValue={comment.body}
-                        type="text"
-                        name="body"
-                        placeholder="content"
-                        onChange={event =>
-                          this.handleChangeComment(event, comment)
-                        }
-                      />{" "}
-                      <button
-                        onClick={event => this.editComment(event, comment)}
-                      >
-                        Submit
-                      </button>
-                    </h5>
-                  ) : (
-                    <h5>body:{comment.body}</h5>
-                  )}
-                  <h5>Author:{comment.author}</h5>
-                  <h5>
-                    Time:<Moment date={comment.timestamp} />
-                  </h5>
-                  <button onClick={event => this.setEditing(event, comment)}>
-                    Edit comment
-                  </button>
+            {this.state.post == undefined ? (
+              <div>go to back page</div>
+            ) : (
+              <div>
+                <h4>Category: {this.state.post.category}</h4>
+                <h4>Author:{this.state.post.author}</h4>
+                <h4>Title: {this.state.post.title}</h4>
+                <h4>
+                  Time: <Moment date={this.state.post.timestamp} />
+                </h4>
+                <h4>Body:{this.state.post.body}</h4>
+                <div>
+                  <Link to={`/editpost/${this.state.post.id}`}>Edit Post</Link>
+                </div>
+                <div>
                   <button
-                    onClick={event => this.deleteComment(event, comment.id)}
+                    onClick={event => this.deletePost(event, this.state.post)}
                   >
-                    Delete comment
+                    Delete Post
                   </button>
+                </div>
+                <div>
+                  <button
+                    onClick={event => this.postsupvote(event, this.state.post)}
+                  >
+                    Upvote
+                  </button>{" "}
+                  {this.state.post.voteScore}{" "}
+                  <button
+                    onClick={event =>
+                      this.postsdownvote(event, this.state.post)
+                    }
+                  >
+                    Downvote
+                  </button>
+                </div>
+                <h4>Number of comments :{this.state.comments.length}</h4>
+                <ol>
+                  {this.state.comments.map((comment, index) => (
+                    <li key={index}>
+                      {comment.is_editing ? (
+                        <h5>
+                          Body :
+                          <textarea
+                            id="comment-textarea"
+                            defaultValue={comment.body}
+                            type="text"
+                            name="body"
+                            placeholder="content"
+                            onChange={event =>
+                              this.handleChangeComment(event, comment)
+                            }
+                          />{" "}
+                          <button
+                            onClick={event => this.editComment(event, comment)}
+                          >
+                            Submit
+                          </button>
+                        </h5>
+                      ) : (
+                        <h5>body:{comment.body}</h5>
+                      )}
+                      <h5>Author:{comment.author}</h5>
+                      <h5>
+                        Time:<Moment date={comment.timestamp} />
+                      </h5>
+                      <button
+                        onClick={event => this.setEditing(event, comment)}
+                      >
+                        Edit comment
+                      </button>
+                      <button
+                        onClick={event => this.deleteComment(event, comment.id)}
+                      >
+                        Delete comment
+                      </button>
+                      <div>
+                        <button onClick={event => this.upvote(event, comment)}>
+                          Upvote
+                        </button>{" "}
+                        {comment.voteScore}{" "}
+                        <button
+                          onClick={event => this.downvote(event, comment)}
+                        >
+                          Downvote
+                        </button>
+                      </div>
+                    </li>
+                  ))}
+                </ol>
+
+                <div>
                   <div>
-                    <button onClick={event => this.upvote(event, comment)}>
-                      Upvote
-                    </button>{" "}
-                    {comment.voteScore}{" "}
-                    <button onClick={event => this.downvote(event, comment)}>
-                      Downvote
+                    <button onClick={event => this.hideAddCommentform(event)}>
+                      Add Comment
                     </button>
                   </div>
-                </li>
-              ))}
-            </ol>
-
-            <div>
-              <div>
-                <button onClick={event => this.hideAddCommentform(event)}>
-                  Add Comment
-                </button>
+                  {this.state.addComment === true ? (
+                    <form onSubmit={event => this.handleSubmitComment(event)}>
+                      <div>
+                        body
+                        <textarea
+                          type="text"
+                          name="body"
+                          placeholder="content"
+                        />
+                      </div>
+                      <div>
+                        author
+                        <input
+                          type="text"
+                          name="author"
+                          placeholder="Author name"
+                        />
+                      </div>
+                      <button>submit</button>
+                    </form>
+                  ) : (
+                    <div />
+                  )}
+                </div>
               </div>
-              {this.state.addComment === true ? (
-                <form onSubmit={event => this.handleSubmitComment(event)}>
-                  <div>
-                    body
-                    <textarea type="text" name="body" placeholder="content" />
-                  </div>
-                  <div>
-                    author
-                    <input
-                      type="text"
-                      name="author"
-                      placeholder="Author name"
-                    />
-                  </div>
-                  <button>submit</button>
-                </form>
-              ) : (
-                <div />
+            )}
+            <Route
+              path="/addpost/:postid"
+              Component={AddPost}
+              render={match => (
+                <div>
+                  <AddPost id={match.params.postid} />
+                </div>
               )}
-            </div>
+            />
           </div>
         )}
-        <Route
-          path="/addpost/:postid"
-          Component={AddPost}
-          render={match => (
-            <div>
-              <AddPost id={match.params.postid} />
-            </div>
-          )}
-        />
       </div>
     );
   }
